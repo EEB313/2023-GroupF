@@ -1,0 +1,161 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+# Define parameters
+beta_0 <- 0.2  # Baseline transmission rate
+beta_A <- 0.1  # Transmission reduction due to vaccine A
+beta_B <- 0.15  # Transmission reduction due to vaccine B
+gamma_A <- 0.02   # Recovery rate for vaccine A
+gamma_B <- 0.03   # Recovery rate for vaccine B
+gamma_AB <- 0.025  # Recovery rate for both vaccines
+gamma_0 <- 0.015  # Baseline recovery rate
+p_culling <- 0.1  # Probability of culling infected individuals
+c <- 0.1  # Rate of culling
+
+# Initial conditions
+S <- 1000  # Initial number of susceptible individuals
+I <- 10    # Initial number of infected individuals
+
+# Time parameters
+t <- seq(0, 100, by = 1)  # Time steps
+
+# Initialize storage for results
+S_A <- numeric(length(t))
+S_B <- numeric(length(t))
+S_AB <- numeric(length(t))
+I_A <- numeric(length(t))
+I_B <- numeric(length(t))
+I_AB <- numeric(length(t))
+R_A <- numeric(length(t))
+R_B <- numeric(length(t))
+R_AB <- numeric(length(t))
+R <- numeric(length(t))
+
+# Set initial conditions
+S_A[1] <- S
+S_B[1] <- S
+S_AB[1] <- S
+I_A[1] <- I
+I_B[1] <- I
+I_AB[1] <- I
+R_A[1] <- 0
+R_B[1] <- 0
+R_AB[1] <- 0
+R[1] <- 0
+
+# Simulate disease spread over time
+for (i in 2:length(t)) {
+  # Calculate transmission rates with vaccine effects
+  beta_A_effective <- beta_0 - beta_A
+  beta_B_effective <- beta_0 - beta_B
+ 
+  # Susceptible equations
+  dS_A <- -beta_A_effective * S_A[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_A[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_A[i - 1])
+  dS_B <- -beta_B_effective * S_B[i - 1] * (I_B[i - 1] + I_AB[i - 1]) / (S_B[i - 1] + I_B[i - 1] + I_AB[i - 1] + R_B[i - 1])
+  dS_AB <- -beta_A_effective * S_AB[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_AB[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_AB[i - 1])
+ 
+  # Infected equations with random culling
+  culling_A <- ifelse(runif(1) < p_culling, c * I_A[i - 1], 0)
+  culling_B <- ifelse(runif(1) < p_culling, c * I_B[i - 1], 0)
+  culling_AB <- ifelse(runif(1) < p_culling, c * I_AB[i - 1], 0)
+ 
+  dI_A <- beta_A_effective * S_A[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_A[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_A[i - 1]) - gamma_A * I_A[i - 1] - culling_A
+  dI_B <- beta_B_effective * S_B[i - 1] * (I_B[i - 1] + I_AB[i - 1]) / (S_B[i - 1] + I_B[i - 1] + I_AB[i - 1] + R_B[i - 1]) - gamma_B * I_B[i - 1] - culling_B
+  dI_AB <- beta_A_effective * S_AB[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_AB[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_AB[i - 1]) - gamma_AB * I_AB[i - 1] - culling_AB
+ 
+  # Infected equations without culling
+  dI_A_no_culling <- beta_A_effective * S_A[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_A[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_A[i - 1]) - gamma_A * I_A[i - 1]
+  dI_B_no_culling <- beta_B_effective * S_B[i - 1] * (I_B[i - 1] + I_AB[i - 1]) / (S_B[i - 1] + I_B[i - 1] + I_AB[i - 1] + R_B[i - 1]) - gamma_B * I_B[i - 1]
+  dI_AB_no_culling <- beta_A_effective * S_AB[i - 1] * (I_A[i - 1] + I_AB[i - 1]) / (S_AB[i - 1] + I_A[i - 1] + I_AB[i - 1] + R_AB[i - 1]) - gamma_AB * I_AB[i - 1]
+ 
+  # Recovery equations
+  dR_A <- gamma_A * I_A[i - 1] 
+  dR_B <- gamma_B * I_B[i - 1] 
+  dR_AB <- gamma_AB * I_AB[i - 1] 
+ 
+  # Update compartments
+  S_A[i] <- S_A[i - 1] + dS_A
+  S_B[i] <- S_B[i - 1] + dS_B
+  S_AB[i] <- S_AB[i - 1] + dS_AB
+  I_A[i] <- I_A[i - 1] + dI_A
+  I_B[i] <- I_B[i - 1] + dI_B
+  I_AB[i] <- I_AB[i - 1] + dI_AB
+  R_A[i] <- R_A[i - 1] + dR_A
+  R_B[i] <- R_B[i - 1] + dR_B
+  R_AB[i] <- R_AB[i - 1] + dR_AB
+ 
+  # Calculate the total recovered individuals without distinguishing between vaccines
+  R[i] <- R_A[i] + R_B[i] + R_AB[i]
+}
+
+# Plot the results (example)
+plot(t, I_A, type = "l", col = "red", xlab = "Time", ylab = "Infected Individuals",
+     main = "Disease Spread with Vaccination and Culling")
+lines(t, I_B, col = "blue")
+lines(t, I_AB, col = "green")
+legend("topright", legend = c("Vaccine A", "Vaccine B", "Vaccine A and B"),
+       col = c("red", "blue", "green"))
+```
+
+
+```{r}
+# Install and load the deSolve package if not already installed
+if (!require(deSolve)) install.packages("deSolve", dependencies=TRUE)
+library(deSolve)
+
+# Define parameters
+parameters <- c(beta_0 = 0.2, beta_A = 0.1, beta_B = 0.15, gamma_A = 0.02, 
+                gamma_B = 0.03, gamma_AB = 0.025, gamma_0 = 0.015,
+                p_culling = 0.1, c = 0.1)
+
+# Initial conditions
+initial_conditions <- c(S_A = 1000, S_B = 1000, S_AB = 1000, 
+                         I_A = 10, I_B = 10, I_AB = 10, 
+                         R_A = 0, R_B = 0, R_AB = 0)
+
+# Time parameters
+times <- seq(0, 100, by = 0.1)
+
+# Define the differential equation system
+disease_model <- function(time, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    beta_A_effective <- beta_0 - beta_A
+    beta_B_effective <- beta_0 - beta_B
+    
+    dS_A <- -beta_A_effective * S_A * (I_A + I_AB) / (S_A + I_A + I_AB + R_A)
+    dS_B <- -beta_B_effective * S_B * (I_B + I_AB) / (S_B + I_B + I_AB + R_B)
+    dS_AB <- -beta_A_effective * S_AB * (I_A + I_AB) / (S_AB + I_A + I_AB + R_AB)
+    
+    culling_A <- ifelse(runif(1) < p_culling, c * I_A, 0)
+    culling_B <- ifelse(runif(1) < p_culling, c * I_B, 0)
+    culling_AB <- ifelse(runif(1) < p_culling, c * I_AB, 0)
+    
+    dI_A <- beta_A_effective * S_A * (I_A + I_AB) / (S_A + I_A + I_AB + R_A) - gamma_A * I_A - culling_A
+    dI_B <- beta_B_effective * S_B * (I_B + I_AB) / (S_B + I_B + I_AB + R_B) - gamma_B * I_B - culling_B
+    dI_AB <- beta_A_effective * S_AB * (I_A + I_AB) / (S_AB + I_A + I_AB + R_AB) - gamma_AB * I_AB - culling_AB
+    
+    dR_A <- gamma_A * I_A
+    dR_B <- gamma_B * I_B
+    dR_AB <- gamma_AB * I_AB
+    
+    return(list(c(dS_A, dS_B, dS_AB, dI_A, dI_B, dI_AB, dR_A, dR_B, dR_AB)))
+  })
+}
+
+# Solve the differential equation system
+out <- ode(y = initial_conditions, times = times, func = disease_model, parms = parameters)
+
+# Plot the results
+matplot(out[, "time"], out[, c("I_A", "I_B", "I_AB")], type = "l", 
+        col = c("red", "blue", "green"), xlab = "Time", ylab = "Infected Individuals",
+        main = "Disease Spread with Vaccination and Culling")
+legend("topright", legend = c("Vaccine A", "Vaccine B", "Vaccine A and B"),
+       col = c("red", "blue", "green"))
+
+```
+
