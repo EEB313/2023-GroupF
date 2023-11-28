@@ -155,7 +155,7 @@ matplot(out[, "time"], out[, c("I_A", "I_B", "I_AB")], type = "l",
         col = c("red", "blue", "green"), xlab = "Time", ylab = "Infected Individuals",
         main = "Disease Spread with Vaccination and Culling")
 legend("topright", legend = c("Vaccine A", "Vaccine B", "Vaccine A and B"),
-       col = c("red", "blue", "green"))
+       col = c("red", "blue", "green"), lty = c(1,1,1))
 
 ```
 
