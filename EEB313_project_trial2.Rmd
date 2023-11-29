@@ -48,7 +48,7 @@ Let us know if we missed any factors or need to remove some!
 ### Susceptible
 
 $$
-  dS/dt = -S*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_AB + \beta_0*I + V_A + V_B + V_AB)
+  dS/dt = -S*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_A + V_B + V_{AB})
 $$
 
 Breakdown:\
@@ -65,7 +65,7 @@ $-S*V_AB$ -\> Remove individuals that get vaccinated with both vaccine A
 differences will be explained*
 
 $$
-  dS_A/dt = -S_A*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_AB + \beta_0*I + V_B) + S*V_A
+  dS_A/dt = -S_A*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_B) + S*V_A
 $$ 
 
 $-S_A*V_B$ -\> Remove individuals that get vaccine B (they move into the
@@ -74,7 +74,7 @@ $S*V_A$ -\> Add unvaccinated individuals that get vaccinated with
 vaccine A\
 
 $$
-   dS_B/dt = -S_B*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_AB + \beta_0*I + V_A) + S*V_B
+   dS_B/dt = -S_B*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_A) + S*V_B
 $$\
 $-S_B*V_A$ -\> Remove individuals that get vaccine A (they move into the
 S_AB population)\
@@ -146,35 +146,33 @@ $I_A*\gamma_A$ - vaccinated A individuals that recover\
 $I_B*\gamma_B$ - vaccianted B individuals that recover\
 $I_AB*\gamma_AB$ - vaccinated AB individuals that recover\
 
+
 ## CODE
 
 ```{r, echo = FALSE}
-if (!require(deSolve)) install.packages("deSolve", dependencies=TRUE)
 library(deSolve)
 library(tidyverse)
-library(dplyr)
 ```
 
 ```{r}
 #### Set up ####
 
 # define parameters
-beta_0 <- 0.2  # Unvaccinated transmission rate
-beta_A <- 0.1  # Vaccinated A transmission rate
-beta_B <- 0.2  # Vaccinated B transmission rate
-beta_AB <- 0.1 # Transmission rate of individual with AB vaccine
+beta_0 <- 0  # Unvaccinated transmission rate
+beta_A <- 0  # Vaccinated A transmission rate
+beta_B <- 0.6  # Vaccinated B transmission rate
+beta_AB <- 0 # Transmission rate of individual with AB vaccine
 
-gamma_0 <- 0.015  # Baseline recovery rate
-gamma_A <- 0.015   # Recovery rate for vaccine A
-gamma_B <- 0.3   # Recovery rate for vaccine B
-gamma_AB <- 0.3  # Recovery rate for both vaccines
+gamma_0 <- 0.15 # Unvaccinated recovery rate
+gamma_A <- 0.15 # Recovery rate for vaccine A
+gamma_B <- 0.15   # Recovery rate for vaccine B
+gamma_AB <- 0.15  # Recovery rate for both vaccines
 
-p_culling <- 0.1  # Probability of culling infected individuals
-c <- 0.1  # Rate of culling
+c <- 0  # Rate of culling
 
-V_A <- 0.2 # vaccine rate of vaccine A
-V_B <- 0.2 # vaccine rate of vaccine B
-V_AB <- 0.04 # rate of getting vaccinated by both A and B
+V_A <- 0 # vaccine rate of vaccine A
+V_B <- 1 # vaccine rate of vaccine B
+V_AB <- 0 # rate of getting vaccinated by both A and B
 
 
 #### Model ####
@@ -182,68 +180,90 @@ V_AB <- 0.04 # rate of getting vaccinated by both A and B
 # put parameter values into vector params
 params <- c(beta_0 = beta_0, beta_A = beta_A, beta_B = beta_B, beta_AB = beta_AB,
             gamma_0 = gamma_0, gamma_A = gamma_A, gamma_B = gamma_B, gamma_AB = gamma_AB,
-            c = c, V_A = V_A, V_B = V_B)
+            c = c, V_A = V_A, V_B = V_B, V_AB = V_AB)
 
-initial_S <- 90
-initial_I <- 10
+# define initial conditions
+initial_S <- 0
+initial_I <- 0
 initial_R <- 0
-initial_S_A <- 0 
+initial_S_A <- 100
 initial_S_B <- 0
 initial_S_AB <- 0
 initial_I_A <- 0
-initial_I_B <- 0
+initial_I_B <- 1
 initial_I_AB <- 0
 initial_R_A <- 0
 initial_R_B <- 0
 initial_R_AB <-0
 
-# define initial conditions
 state <- c(S = initial_S, S_A = initial_S_A, S_B = initial_S_B, S_AB = initial_S_AB, 
            I = initial_I, I_A = initial_I_A, I_B = initial_I_B, I_AB = initial_I_AB,
            R = initial_R, R_A = initial_R_A, R_B = initial_R_B, R_AB = initial_R_AB) 
 
-# define times to save
-times <- seq(0, 15, 1)
+# define time
+times <- seq(0, 100, 0.001)
 
 # define the model!
-modified_sir <- function(time, state, params){
+model <- function(time, state, params){
   with(as.list(c(state,params)),{
     
     # Suseceptible 
     dS <- -S*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I + V_A + V_B + V_AB)
     dS_A <- -S_A*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I + V_B) + S*V_A
     dS_B <- -S_B*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I + V_A) + S*V_B
-    dS_AB <- -S_AB*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) + S*V_AB
+    dS_AB <- -S_AB*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) + S*V_AB + S_A*V_B + S_B*V_A
     
     # Infected
-    dI <- S*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - 
-      I*(c + gamma_0 + V_A + V_A + V_AB)
-    dI_A <- S_A*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - 
-      I_A*(gamma_A + c + V_B) +
-      I*V_A
-    dI_B <- S_B*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - 
-      I_B*(gamma_B + c + V_A) +
-      I*V_B
-    dI_AB <- S_AB*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - 
-      I_AB*(gamma_AB + c) +
-      I*V_AB + I_A*V_B + I_B*V_A
+    dI <- S*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - I*(c + gamma_0 + V_A + V_B + V_AB)
+    dI_A <- S_A*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - I_A*(gamma_A + c + V_B) + I*V_A
+    dI_B <- S_B*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - I_B*(gamma_B + c + V_A) + I*V_B
+    dI_AB <- S_AB*(beta_A*I_A + beta_B*I_B + beta_AB*I_AB + beta_0*I) - I_AB*(gamma_AB + c) + I*V_AB + I_A*V_B + I_B*V_A
     
     # Recovery
-    dR <- I*gamma_0
-    dR_A <- I_A*gamma_A
-    dR_B <- I_B*gamma_B
-    dR_AB <- I_AB*gamma_AB
+    dR <- I*gamma_0 - (V_A+V_B+V_AB)*R
+    dR_A <- I_A*gamma_A - (V_B+V_AB)*R_A + V_A*R
+    dR_B <- I_B*gamma_B - V_A*R_B + V_B*R
+    dR_AB <- I_AB*gamma_AB + V_AB*R + V_A*R_B + V_B*R_A
     
-    return(list(c(dS, dS_A, dS_B, dS_B, dI, dI_A, dI_B, dI_AB, dR, dR_A, dR_B, dR_AB)))
+    return(list(c(dS, dS_A, dS_B, dS_AB, dI, dI_A, dI_B, dI_AB, dR, dR_A, dR_B, dR_AB)))
   })
 }
 
 # numerically integrate equations!
-out <- as.data.frame(ode(state, times, modified_sir, params))
+out <- as.data.frame(ode(state, times, model, params))
 
-out %>% pivot_longer(! time) %>%
+# plot
+
+# plots everything
+out |> select(time, I, I_A, I_B, I_AB) |> pivot_longer(! time) %>%
   ggplot(aes(x = time, y = value, color = name)) +
   geom_line()
+
+# plots infection
+matplot(out[, "time"], out[, c("I","I_A", "I_B", "I_AB")], type = "l", 
+        col = c("purple","red", "blue", "green"), xlab = "Time", ylab = "Infected Individuals",
+        main = "Disease Spread with Vaccination and Culling")
+legend("topright", legend = c("Unvaccinated","Vaccine A", "Vaccine B", "Vaccine A and B"),
+       col = c("purple","red", "blue", "green"), lty = c(1,1,1,1))
+
+
+# plots susceptible
+plot(x = out$time, y = out$S, col = "purple", type = "l")
+# lines(x = out$time, y = out$S_A, col = "red")
+lines(x = out$time, y = out$S_B, col = "blue")
+lines(x = out$time, y = out$S_AB, col = "green")
+
+
+# NEW
+for (beta_AB in seq(0,1,0.1)){
+  params$beta_AB <- beta_AB
+  out <- as.data.frame(ode(state, times, model, params))
+  out$I_AB[which.max(out$I_AB)]
+}
+#^ What this is:
+# basically we are simulating different beta_AB values and finding the highest number of vaccinations and we can plot it
+# Why? We do this to confirm expectations -> if beta_AB is increasing we expect I_AB to increase as well ig
+# idk why are we doing this...
 ```
 
 Next Steps:
