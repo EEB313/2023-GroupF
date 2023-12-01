@@ -1,0 +1,386 @@
+---
+title: "EEB313 - Project Trial 2"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+#### ctrl/cmd+F "CODE" to go straight to the code
+
+It's a mess I recommend going to "Visual" mode for non-code stuff
+
+## Parameters
+
+beta_0 - Transmission rate of unvaccinated\
+beta_A - Transmission rate of A vaccine\
+beta_B - Transmission rate of B vaccine\
+beta_AB - Transmission rate of AB vaccine\
+
+gamma_0 - Recovery rate of unvaccinated\
+gamma_A - Recovery rate for vaccine A\
+gamma_B - Recovery rate for vaccine B\
+gamma_AB - Recovery rate for both vaccines\
+
+c - Rate of culling
+
+V_A - vaccine rate of vaccine A\
+V_B - vaccine rate of vaccine B\
+V_AB - rate of getting vaccinated by both A and B\
+
+## Differential Equations
+
+S - Unvaccinated and susceptible S_A - vaccinated with A and susceptible
+S_B - vaccinated with B and susceptible S_AB - vaccinated with AB and
+susceptible
+
+I - Infected and unvaccianted I_A - Infected and vaccinated with A I_B -
+Infected and vaccinated with B I_AB - Infected and vaccinated with AB
+
+R - Recovery of unvaccinated individuals R_A - Recovery of vaccinated A
+individuals R_B - Recovery of vaccinated A individuals R_AB - Recovery
+of vaccinated A individuals
+
+## Equations
+
+Let us know if we missed any factors or need to remove some!
+
+### Susceptible
+
+$$
+  dS/dt = -S*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_A + V_B + V_{AB})
+$$
+
+Breakdown:\
+$-S\beta_A*I_A$ -\> Infection by individual with vaccine A\
+$-S\beta_B*I_B$ -\> Infection by individual with vaccine B\
+$-S\beta_AB*I_AB$ -\> Infection by individual with vaccine AB\
+$-S\beta_0*I$ -\> Infection by individual that's unvaccinated\
+$-S*V_A$ -\> Remove individuals that get vaccinated with vaccine A\
+$-S*V_A$ -\> Remove individuals that get vaccinated with vaccine B\
+$-S*V_AB$ -\> Remove individuals that get vaccinated with both vaccine A
+& B
+
+*This logic is similar to* $dS_A/dt$, $dS_B/dt$, $dS_AB$ *Only
+differences will be explained*
+
+$$
+  dS_A/dt = -S_A*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_B) + S*V_A
+$$ 
+
+$-S_A*V_B$ -\> Remove individuals that get vaccine B (they move into the
+S_AB population)\
+$S*V_A$ -\> Add unvaccinated individuals that get vaccinated with
+vaccine A\
+
+$$
+   dS_B/dt = -S_B*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I + V_A) + S*V_B
+$$\
+$-S_B*V_A$ -\> Remove individuals that get vaccine A (they move into the
+S_AB population)\
+$S*V_B$ -\> Add unvaccinated individuals that get vaccinated with
+vaccine B\
+
+$$
+   dS_{AB}/dt = -S_{AB}*(\beta_A*I_A + \beta_B*I_B + \beta_{AB}*I_{AB} + \beta_0*I) 
+   + S*V_{AB} + S_A*V_B + S_B*V_A
+$$\
+$S*V_{AB}$ -\> Add unvaccinated individuals that get both vaccines at
+the same time\
+$S_A*V_B$ -\> Add individuals already with vaccine A that get vaccine B\
+$S_B*V_A$ -\> Add individuals already with vaccine B that get vaccine B\
+
+### Infected
+
+$$
+   dI = S*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I) - 
+   I*(c + \gamma_0 + V_A + V_B + V_{AB})
+$$\
+Breakdown\
+$S*\beta_A*I_A$ - Add susceptible individuals that get infected by
+individuals with vaccine A\
+$S*\beta_B*I_B$ - Add susceptible individuals that get infected by
+individuals with vaccine B\
+$S*\beta_B*I_{AB}$ - Add susceptible individuals that get infected by
+individuals with vaccine A&B\
+$S*\beta_0*I$ - Add susceptible individuals that get infected by
+unvaccinated individuals
+
+$-I*c$ - remove individuals that are culled\
+$-I*\gamma_0$ - remove individuals that recover\
+$-I*V_A$ - remove unvax individuals that are infected and get vaccine A\
+$-I*V_B$ - remove unvax individuals that are infected and get vaccine B\
+$-I*V_{AB}$ - remove individuals that are infected and get vaccine A&B\
+
+$$
+   dI_A <- S_A*(\beta_A*I_A + \beta_B*I_B + \beta_AB*I_{AB} + \beta_0*I) - 
+      I_A*(c + \gamma_A + V_B) + I*V_A
+$$\
+$I*V_A$ - Add uninfected, infected individuals that get vaccine A
+
+$$
+    dI_B <- S_B*(\beta_A*I_A + \beta_B*I_B + \beta_{AB}*I_{AB} + \beta_0*I) - 
+      I_B*(\gamma_B + c + V_A) + I*V_B
+$$\
+$I*V_A$ - Add uninfected, infected individuals that get vaccine B
+
+$$
+    dI_{AB} <- S_{AB}*(\beta_A*I_A + \beta_B*I_B + \beta_{AB}*I_{AB} + \beta_0*I) - 
+      I_{AB}*(\gamma_{AB} + c) + I*V_{AB} + I_A*V_B + I_B*V_A
+$$\
+$I*V_{AB}$ - Add uninfected, infected individuals that get vaccine A&B\
+$I_A*V_B$ - Add vaccine A, infected individuals that get vaccine B\
+$I_B*V_A$ - Add vaccine B, infected individuals that get vaccine A\
+
+### Recovery
+
+$$
+\begin{aligned}
+dR = I*\gamma_0 \\
+dR_A = I_A*\gamma_A \\
+dR_B = I_B*\gamma_B \\
+dR_{AB} = I_{AB}*\gamma_{AB} \\
+\end{aligned}
+$$ $I*\gamma_0$ - unvaccinated individuals that recover\
+$I_A*\gamma_A$ - vaccinated A individuals that recover\
+$I_B*\gamma_B$ - vaccianted B individuals that recover\
+$I_AB*\gamma_AB$ - vaccinated AB individuals that recover\
+
+
+## CODE
+
+```{r, echo = FALSE}
+library(deSolve)
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+#### Set up ####
+
+# define parameters
+beta_0 <- 0.6  # Unvaccinated transmission rate
+beta_A <- 0.05  # Vaccinated A transmission rate
+beta_B <- 0.09  # Vaccinated B transmission rate 0.6
+beta_AB <- 0.001 # Transmission rate of individual with AB vaccine
+
+gamma_0 <- 0.01 # Unvaccinated recovery rate 0.15
+gamma_A <- 0.5 # Recovery rate for vaccine A
+gamma_B <- 0.2   # Recovery rate for vaccine B
+gamma_AB <- 0.7  # Recovery rate for both vaccines
+
+c <- 0.5  # Rate of culling
+
+V_A <- 0.4 # vaccine rate of vaccine A
+V_B <- 0.4 # vaccine rate of vaccine B
+V_AB <- 0.2 # rate of getting vaccinated by both A and B
+
+
+#### Model ####
+
+# put parameter values into vector params
+params <- c(beta_0 = beta_0, beta_A = beta_A, beta_B = beta_B, beta_AB = beta_AB,
+            gamma_0 = gamma_0, gamma_A = gamma_A, gamma_B = gamma_B, gamma_AB = gamma_AB,
+            c = c, V_A = V_A, V_B = V_B, V_AB = V_AB)
+
+# define initial conditions
+initial_S <- 200
+initial_I <- 5
+initial_R <- 10
+initial_S_A <- 100 #100
+initial_S_B <- 100
+initial_S_AB <- 50
+initial_I_A <- 3
+initial_I_B <- 3
+initial_I_AB <- 6
+initial_R_A <- 2
+initial_R_B <- 2
+initial_R_AB <-1
+
+state <- c(S = initial_S, S_A = initial_S_A, S_B = initial_S_B, S_AB = initial_S_AB, 
+           I = initial_I, I_A = initial_I_A, I_B = initial_I_B, I_AB = initial_I_AB,
+           R = initial_R, R_A = initial_R_A, R_B = initial_R_B, R_AB = initial_R_AB) 
+
+# define time
+times <- seq(0, 100, 0.001)
+
+model <- function(time, state, params) {
+  with(as.list(c(state, params)), {
+    # Model equations (similar to your original code)
+    
+    # Suseceptible 
+    dS <- -S * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I + V_A + V_B + V_AB)
+    dS_A <- -S_A * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I + V_B) + S * V_A
+    dS_B <- -S_B * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I + V_A) + S * V_B
+    dS_AB <- -S_AB * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I) + S * V_AB + S_A * V_B + S_B * V_A
+    
+    # Infected
+    dI <- S * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I) - I * (c + gamma_0 + V_A + V_B + V_AB)
+    dI_A <- S_A * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I) - I_A * (gamma_A + c + V_B) + I * V_A
+    dI_B <- S_B * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I) - I_B * (gamma_B + c + V_A) + I * V_B
+    dI_AB <- S_AB * (beta_A * I_A + beta_B * I_B + beta_AB * I_AB + beta_0 * I) - I_AB * (gamma_AB + c) + I * V_AB + I_A * V_B + I_B * V_A
+    
+    # Recovery
+    dR <- I * gamma_0 - (V_A + V_B + V_AB) * R
+    dR_A <- I_A * gamma_A - (V_B + V_AB) * R_A + V_A * R
+    dR_B <- I_B * gamma_B - V_A * R_B + V_B * R
+    dR_AB <- I_AB * gamma_AB + V_AB * R + V_A * R_B + V_B * R_A
+    
+    return(list(c(dS, dS_A, dS_B, dS_AB, dI, dI_A, dI_B, dI_AB, dR, dR_A, dR_B, dR_AB)))
+  })
+}
+
+```
+
+
+```{r}
+# Install and load necessary packages
+#install.packages("deSolve")
+library(deSolve)
+library(ggplot2)
+
+# Function to simulate the model
+simulate_model <- function(params, times, state) {
+  ode_result <- ode(y = state, times = times, func = model, parms = params)
+  return(ode_result)
+}
+
+# Function to extract maximum infected individuals for each strategy
+get_max_infected <- function(simulation_result) {
+  max_infected <- apply(simulation_result[, grep("^I", colnames(simulation_result))], 1, max)
+  return(max_infected)
+}
+
+# Define strategies
+strategies <- list(
+  no_culling_no_vaccine = params,
+  culling_no_vaccine = params,
+  vaccine_A_no_culling = params,
+  vaccine_A_culling = params,
+  vaccine_B_no_culling = params,
+  vaccine_B_culling = params,
+  vaccine_AB_no_culling = params,
+  vaccine_AB_culling = params
+)
+
+# Modify parameters for different strategies
+strategies$culling_no_vaccine["c"] <- 1
+strategies$vaccine_A_no_culling["V_A"] <- 0.4
+strategies$vaccine_A_culling[c("V_A", "c")] <- c(0.4, 1)
+strategies$vaccine_B_no_culling["V_B"] <- 0.4
+strategies$vaccine_B_culling[c("V_B", "c")] <- c(0.4, 1)
+strategies$vaccine_AB_no_culling[c("V_A", "V_B")] <- c(0.2, 0.2)
+strategies$vaccine_AB_culling[c("V_A", "V_B", "c")] <- c(0.2, 0.2, 1)
+
+# Create a data frame to store results
+results <- data.frame()
+
+# Simulate and extract maximum infected for each strategy
+for (strategy_name in names(strategies)) {
+  simulation_result <- simulate_model(strategies[[strategy_name]], times, state)
+  max_infected <- get_max_infected(simulation_result)
+  results <- rbind(results, data.frame(Time = simulation_result[, "time"], Max_Infected = max_infected, Strategy = strategy_name))
+}
+
+# Plot the results using ggplot2
+ggplot(results, aes(x = Time, y = Max_Infected, color = Strategy)) +
+  geom_line() +
+  labs(title = "Maximum Number of Infected Individuals Over Time",
+       x = "Time",
+       y = "Max Infected Individuals") +
+  theme_minimal() +
+  facet_wrap(~Strategy, scales = "free_y")
+
+```
+
+
+
+```{r}
+# Numerically integrate equations
+out <- as.data.frame(ode(state, times, model, params))
+
+# Plot everything
+out %>%
+  select(time, I, I_A, I_B, I_AB) %>%
+  pivot_longer(!time) %>%
+  ggplot(aes(x = time, y = value, color = name)) +
+  geom_line() +
+  ggtitle("Overall Infection")
+```
+
+
+```{r}
+# ... (previous code remains unchanged)
+
+# Convert the data to long format for easier plotting with ggplot
+out_long_I <- out %>%
+  pivot_longer(cols = c("I", "I_A", "I_B", "I_AB"), names_to = "Group_I", values_to = "Infected")
+
+# Plot for every possible scenario using facets
+ggplot(out_long_I, aes(x = time, y = Infected, color = Group_I)) +
+  geom_line() +
+  labs(title = "Disease Spread with Vaccination and Culling",
+       x = "Time",
+       y = "Infected Individuals") +
+  scale_color_manual(values = c("purple", "red", "blue", "green")) +
+  facet_wrap(~ Group_I, scales = "free_y") +
+  theme_minimal()
+
+```
+
+```{r}
+# Convert the data to long format for easier plotting with ggplot
+out_long_S <- out %>%
+  pivot_longer(cols = c("S", "S_A", "S_B", "S_AB"), names_to = "Group_S", values_to = "Susceptible")
+
+# Plot for every possible scenario using facets
+ggplot(out_long_S, aes(x = time, y = Susceptible, color = Group_S)) +
+  geom_line() +
+  labs(title = "Disease Spread with Vaccination and Culling",
+       x = "Time",
+       y = "Susceptible Individuals") +
+  scale_color_manual(values = c("purple", "red", "blue", "green")) +
+  facet_wrap(~ Group_S, scales = "free_y") +
+  theme_minimal()
+```
+
+```{r}
+out_long_R <- out %>%
+  pivot_longer(cols = c("R", "R_A", "R_B", "R_AB"), names_to = "Group_R", values_to = "Recovered")
+
+# Plot for every possible scenario using facets
+ggplot(out_long_R, aes(x = time, y = Recovered, color = Group_R)) +
+  geom_line() +
+  labs(title = "Disease Spread with Vaccination and Culling",
+       x = "Time",
+       y = "Recovered Individuals") +
+  scale_color_manual(values = c("purple", "red", "blue", "green")) +
+  facet_wrap(~ Group_R, scales = "free_y") +
+  theme_minimal()
+```
+
+```{r}
+# Convert the data to long format for easier plotting with ggplot
+out_long <- out %>%
+  pivot_longer(cols = c("S", "S_A", "S_B", "S_AB", "I", "I_A", "I_B", "I_AB", "R", "R_A", "R_B", "R_AB"), 
+               names_to = "Group", values_to = "Individuals")
+
+# Define a larger set of colors
+my_colors <- c("purple", "red", "blue", "green", "orange", "pink", "brown", "gray", "cyan", "magenta", "yellow", "black")
+
+# Plot for every possible scenario using facets
+ggplot(out_long, aes(x = time, y = Individuals, color = Group)) +
+  geom_line() +
+  labs(title = "Disease Spread with Vaccination and Culling",
+       x = "Time",
+       y = "Individuals") +
+  scale_color_manual(values = my_colors) +
+  facet_wrap(~ Group, scales = "free_y") +
+  theme_minimal()
+
+
+```
+
+
+
+
